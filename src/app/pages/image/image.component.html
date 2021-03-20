@@ -1,0 +1,35 @@
+<div class="infobar">
+  <h1 *ngIf="rawData">Project: {{rawData.name}}</h1>
+  <img *ngIf="thumb" class="thumb" [src]="thumb">
+</div>
+<div>
+  <span class="buttonBar">
+    <button (click)="logout()">LogOut</button>
+  </span>
+  <span class="buttonBar">
+    <button (click)="createNewProject()">Create New Project</button>
+  </span>
+  <span class="buttonBar">
+    <button (click)="openCurrenProject()">Open Current Project</button>
+  </span>
+  <span class="buttonBar">
+    <button (click)="testCurrentData()">Test Data</button>
+  </span>
+
+  <!--  <span class="buttonBar">
+    <button (click)="drawCanvas()">Draw Canvas</button>
+  </span>-->
+</div>
+<div *ngIf="rawData" class="columnbar" [style.width.px]="width">
+  <div class="column" [style.width.px]="column.width"
+       *ngFor="let column of rawData.columns">
+    {{column.name}}
+  </div>
+</div>
+<div class="container">
+  <canvas #underlayEl class="fs_image_canvas" [width]="width" [height]="height"></canvas>
+  <canvas #overlayEl class="overlay_canvas" [width]="width" [height]="height"></canvas>
+</div>
+<img *ngIf="src" class="myImage" #imageEl [src]="src" (load)="imageLoaded(imageEl)"/>
+
+

@@ -1,0 +1,11 @@
+{
+  "targets": {
+    "trustman-36fa5": {
+      "hosting": {
+        "Pixalot": [
+          "trustman-36fa5"
+        ]
+      }
+    }
+  }
+}

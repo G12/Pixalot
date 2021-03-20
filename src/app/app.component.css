@@ -1,0 +1,37 @@
+.blue_back {
+  padding-top: 8rem;
+  width: 100%;
+  min-height: 2732px;
+  /*
+  background-position: 0 0;
+  background-size: 100%;
+  background-repeat: repeat-y;
+  background-image: url("src/assets/bluejuju.jpg");
+
+   */
+}
+
+.google_login {
+  height: 46px;
+  background-position: center;
+  background-image: url("src/assets/btn_google_signin_dark_normal_web.png");
+  background-size: 191px;
+  background-repeat: no-repeat;
+}
+
+.google_login:hover {
+  background-image: url("src/assets/btn_google_signin_dark_focus_web.png");
+  cursor: pointer;
+}
+
+.google_login::selection {
+  background-image: url("src/assets/btn_google_signin_dark_pressed_web.png");
+}
+
+.login_form {
+  background-color: white;
+  margin: auto;
+  width: 240px;
+  box-shadow: 5px 5px 40px black;
+  padding: 1em;
+}

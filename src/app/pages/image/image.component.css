@@ -1,0 +1,57 @@
+button{
+  /*all: unset;*/
+}
+.myImage {
+  display: none;
+}
+.container {
+  position: relative;
+  margin: 0;
+  padding: 0;
+}
+.fs_image_canvas {
+  position: relative;
+}
+.overlay_canvas {
+  margin: 0;
+  padding: 0;
+  /*position: relative;*/
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/**************************   Under Construction  ***********************/
+.columnbar{
+  height: 80px;
+  background-color: lightgray;
+}
+.column {
+  display: inline-block;
+  border: black solid 2px;
+  border-right: black solid 1px;
+  border-left: black solid 1px;
+  text-align: center;
+  height: 100%;
+}
+
+.buttonBar {
+  margin: 0;
+  margin-right: 10px;
+  padding: 0;
+  height: 20px;
+  background-color: darkgrey;
+}
+
+.thumb{
+  width: 200px;
+}
+/*
+#clip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  clip: rect(0px, 7000px, 3300px, 0px);
+  clip: shape(top, right, bottom, left); NB 'rect' is the only available option
+}
+*/
