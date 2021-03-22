@@ -114,7 +114,6 @@ export class ImageComponent implements OnInit, AfterViewInit {
     console.log('Width: ' + this.width + ' Height: ' + this.height);
     this.overlayCanvas = this.overlayEl.nativeElement;
     this.ctx = this.overlayCanvas.getContext('2d');
-
     this.overlayCanvas.addEventListener('mousedown', (ev => {
 
       if (this.noRGBA) {
@@ -166,12 +165,13 @@ export class ImageComponent implements OnInit, AfterViewInit {
     }));
     this.fsImageCanvas = this.fsImageEl.nativeElement;
     // KLUDGE HERE may need to increase timeout
-    setTimeout(e => this.drawCanvas(), 100);
+    setTimeout(e => this.drawCanvas(), 500);
   }
 
   drawCanvas(): void {
     this.imgCtx = this.fsImageCanvas.getContext('2d');
     this.imgCtx.drawImage(this.image, 0, 0, this.width, this.height);
+    this.drawFrames(this.ctx);
   }
 
   ////////////   After here the image and canvases are loaded
@@ -232,7 +232,7 @@ export class ImageComponent implements OnInit, AfterViewInit {
           this.src = this.path + folder + '/red.jpg';
         }
         this.thumb = this.path + folder + '/black.jpg';
-        // Once we have default project id we can the data
+        // Once we have default project id we can get the data
         this.getColumnRecMetaData(id);
       } else {
         // doc.data() will be undefined in this case
@@ -264,6 +264,18 @@ export class ImageComponent implements OnInit, AfterViewInit {
         this.rawData = this.columnRecMetaData.rawData;
         sub.unsubscribe();
       }
+    });
+  }
+
+  drawFrames(ctx: CanvasRenderingContext2D): void {
+    console.log('this.rawData ', this.rawData);
+    console.log('ctx ', ctx);
+    this.rawData.columns.forEach(column => {
+      column.portals.forEach(prtl => {
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(prtl.l, prtl.t, prtl.r, prtl.b);
+      });
     });
   }
 
