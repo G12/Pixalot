@@ -65,9 +65,9 @@ export interface PortalRec {
   id?: string;
   index: number;
   colName: string;
-  rawDataId: string;
-  user: string;
-  owner: string;
+  rawDataId?: string;
+  user?: string;
+  owner?: string;
   l: number;
   t: number;
   r: number;
@@ -100,4 +100,8 @@ export interface ColumnRecMetaData {
   rawData: RawData;
 }
 
+export interface LocalData {
+  rgba: number[];
+  rec: number[];
+}
 

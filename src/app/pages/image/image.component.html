@@ -1,4 +1,5 @@
 <div class="infobar">
+  <h1>Output[{{output}}]</h1>
   <h1 *ngIf="rawData">Project: {{rawData.name}}</h1>
   <img *ngIf="thumb" class="thumb" [src]="thumb">
 </div>
@@ -13,7 +14,10 @@
     <button (click)="openCurrenProject()">Open Current Project</button>
   </span>
   <span class="buttonBar">
-    <button (click)="testCurrentData()">Test Data</button>
+    <button (click)="setImgData()">Set Image Data</button>
+  </span>
+  <span class="buttonBar">
+    <button (click)="testWorker()">Test Worker</button>
   </span>
 
   <!--  <span class="buttonBar">
@@ -22,11 +26,12 @@
 </div>
 <div *ngIf="rawData" class="columnbar" [style.width.px]="width">
   <div class="column" [style.width.px]="column.width"
+       (click)="selectColumn(column)" [style.background-color]="getColColor(column)"
        *ngFor="let column of rawData.columns">
     {{column.name}}
   </div>
 </div>
-<div class="container">
+<div class="container" [style.width.px]="width" [style.height.px]="height">
   <canvas #underlayEl class="fs_image_canvas" [width]="width" [height]="height"></canvas>
   <canvas #overlayEl class="overlay_canvas" [width]="width" [height]="height"></canvas>
 </div>

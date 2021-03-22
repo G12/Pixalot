@@ -12,6 +12,8 @@ export class AppComponent {
   }
   login(): void {
     this.authService.loginWithGoogle().then((user) => {
+      console.log('loginWithGoogle user: ', user);
     });
   }
 }
+
