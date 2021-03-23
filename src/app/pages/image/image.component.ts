@@ -1,7 +1,7 @@
 import {AfterViewInit, Component, ElementRef, OnInit, ViewChild} from '@angular/core';
 import {AuthService} from '../../services/auth.service';
 import {ProjectService} from '../../services/project.service';
-import {BootParam, Column, ColumnRecMetaData, LocalData, PortalRec, RawData} from '../../project.data';
+import {Admin, AdminList, BootParam, Column, ColumnRecMetaData, LocalData, PortalRec, RawData} from '../../project.data';
 import {Subscription} from 'rxjs';
 
 @Component({
@@ -15,6 +15,8 @@ export class ImageComponent implements OnInit, AfterViewInit {
   static bottom = 'bottom';
   static right = 'right';
   static left = 'left';
+  static lineWidth = 6;
+  static offset = 3;
 
   ///////////////////////// Test
 
@@ -22,6 +24,13 @@ export class ImageComponent implements OnInit, AfterViewInit {
   portalRecs: PortalRec[];
   columnRecMetaData: ColumnRecMetaData;
   rawData: RawData;
+
+  //////////////////////////// user info /////////////////////////////
+  googleUID: string;
+  isAdmin = false;
+  adminList: AdminList;
+  fsUser: BootParam;
+  fsAdmin: BootParam;
 
   //////////////////////////// firestore
   bootSubscription: Subscription;
@@ -72,8 +81,13 @@ export class ImageComponent implements OnInit, AfterViewInit {
   ///////////////  initialization helper methods //////////////////////
 
   ngOnInit(): void {
+
+    this.authService.afAuth.currentUser.then(value => {
+      this.googleUID = value.uid;
+    });
+
     if (typeof Worker !== 'undefined') {
-      this.worker = new Worker('./../../app.worker', { type: 'module' });
+      this.worker = new Worker('./../../app.worker', {type: 'module'});
       this.worker.onmessage = ({data}) => {
         this.output = data;
       };
@@ -134,7 +148,7 @@ export class ImageComponent implements OnInit, AfterViewInit {
           }
         });
       } else if (this.isColumnSet) {
-        if (confirm('Set Next Column for here?')){
+        if (confirm('Set Next Column for here?')) {
           this.pickColumnPositions(ev, this.overlayCanvas);
         }
       } else if (this.isFraming) {
@@ -147,7 +161,7 @@ export class ImageComponent implements OnInit, AfterViewInit {
             return;
           }
           console.log('overlayCanvas.width: ' + this.overlayCanvas.width +
-                      ' fsImageCanvas.width: ' + this.fsImageCanvas.width);
+            ' fsImageCanvas.width: ' + this.fsImageCanvas.width);
           this.getBoundingBox(ev, this.overlayCanvas);
         } else {
           alert('Sorry Busy Now!');
@@ -158,7 +172,7 @@ export class ImageComponent implements OnInit, AfterViewInit {
           this.isColumnSet = true;
           return;
         }
-        if (confirm('Confirm to continue setting columns.')){
+        if (confirm('Confirm to continue setting columns.')) {
           this.isColumnSet = true;
         }
       }
@@ -205,8 +219,12 @@ export class ImageComponent implements OnInit, AfterViewInit {
   }
 
   newProject(name: string): void {
-    if (this.bootSubscription){ this.bootSubscription.unsubscribe(); }
-    if (this.portalRecsSubscription) { this.portalRecsSubscription.unsubscribe(); }
+    if (this.bootSubscription) {
+      this.bootSubscription.unsubscribe();
+    }
+    if (this.portalRecsSubscription) {
+      this.portalRecsSubscription.unsubscribe();
+    }
     this.columnRecMetaData = this.projectService.setMetaDataDoc(name);
     this.rawData = this.columnRecMetaData.rawData;
     // set the current project id and folder to the admin boot params
@@ -220,29 +238,54 @@ export class ImageComponent implements OnInit, AfterViewInit {
     });
   }
 
-  openCurrenProject(): void {
-    this.bootSubscription = this.projectService.adminBootParamDocRef.get().subscribe(data => {
-      if (data.exists) {
-        const adminBootParam = data.data() as BootParam;
-        const id = adminBootParam.project_id;
-        const folder = adminBootParam.folder;
-        if (confirm('Open for testing Locally')){
-          this.src = 'assets/red.jpg';
-        } else {
-          this.src = this.path + folder + '/red.jpg';
+  setAdmin(name: string, uid: string): void {
+    const admin: Admin = {name, uid};
+    const adminList: AdminList = {admins: []};
+    adminList.admins.push(admin);
+    this.projectService.adminListBootDocRef.set(adminList);
+  }
+
+  getBootParams(): void {
+    // TODO add UI procedure for assigning admin status this.setAdmin('G12mo', '1KYU0BdE0rXTly5Y5KZslOvxpow2');
+    this.projectService.bootParamsCollection.get().subscribe(data => {
+      if (!data.empty) {
+        const admlst = data.docs.find(d => d.id === 'admin_list');
+        if (admlst) {
+          this.adminList = admlst.data() as AdminList;
         }
-        this.thumb = this.path + folder + '/black.jpg';
-        // Once we have default project id we can get the data
-        this.getColumnRecMetaData(id);
-      } else {
-        // doc.data() will be undefined in this case
+        const usr = data.docs.find(d => d.id === 'fs_user');
+        if (usr) {
+          this.fsUser = usr.data() as BootParam;
+        }
+        const adm = data.docs.find(d => d.id === 'fs_admin');
+        if (adm) {
+          this.fsAdmin = adm.data() as BootParam;
+        }
+        const test = this.adminList.admins.find(a => a.uid === this.googleUID);
+        this.isAdmin = !!test;
+        if (this.fsAdmin) {
+          const id = this.fsAdmin.project_id;
+          const folder = this.fsAdmin.folder;
+          if (confirm('Open for testing Locally')) {
+            this.src = 'assets/red.jpg';
+          } else {
+            this.src = this.path + folder + '/red.jpg';
+          }
+          this.thumb = this.path + folder + '/black.jpg';
+          // Once we have default project id we can get the data
+          this.getColumnRecMetaData(id);
+        }
       }
     });
   }
 
+  openCurrenProject(): void {
+    this.getBootParams();
+  }
+
   selectColumn(column: Column): void {
     if (this.isFraming) {
-      console.log('currentColumn: ', this.currentColumn );
+      console.log('currentColumn: ', this.currentColumn);
       this.columnRecMetaData.rawData = this.rawData;
       this.projectService.updateRawDataPortalRec(this.columnRecMetaData);
       // Carry on
@@ -268,12 +311,10 @@ export class ImageComponent implements OnInit, AfterViewInit {
   }
 
   drawFrames(ctx: CanvasRenderingContext2D): void {
-    console.log('this.rawData ', this.rawData);
-    console.log('ctx ', ctx);
     this.rawData.columns.forEach(column => {
       column.portals.forEach(prtl => {
         ctx.strokeStyle = '#FFFFFF';
-        ctx.lineWidth = 3;
+        ctx.lineWidth = ImageComponent.lineWidth;
         ctx.strokeRect(prtl.l, prtl.t, prtl.r, prtl.b);
       });
     });
@@ -323,7 +364,7 @@ export class ImageComponent implements OnInit, AfterViewInit {
       }
       // NOTE all l r t b values are adjusted to make bounding box slightly smaller
       const fudge = 2;
-      const l = localData ? (localData.rec[0] + fudge) : null;
+      let l = localData ? (localData.rec[0] + fudge) : null;
       // console.log('left: ' + l);
       exit = max;
       while (exit > 0) {
@@ -334,7 +375,7 @@ export class ImageComponent implements OnInit, AfterViewInit {
         }
         exit--;
       }
-      const r = localData ? (localData.rec[0] - l - fudge) : null;
+      let r = localData ? (localData.rec[0] - l - fudge) : null;
       // console.log('right: ' + r);
       exit = max;
       while (exit > 0) {
@@ -345,7 +386,7 @@ export class ImageComponent implements OnInit, AfterViewInit {
         }
         exit--;
       }
-      const t = localData ? (localData.rec[1] + fudge) : null;
+      let t = localData ? (localData.rec[1] + fudge) : null;
       // console.log('top: ' + t);
       exit = max;
       while (exit > 0) {
@@ -356,12 +397,16 @@ export class ImageComponent implements OnInit, AfterViewInit {
         }
         exit--;
       }
-      const b = localData ? (localData.rec[1] - t - fudge) : null;
+      let b = localData ? (localData.rec[1] - t - fudge) : null;
       // console.log('bottom: ' + b);
       if (l && r && t && b) {
+        // expand frame by 2 pixels
+        l = l - ImageComponent.offset; r = r + ImageComponent.offset;
+        t = t - ImageComponent.offset; b = b + ImageComponent.offset;
+
         // console.log('Left: ' + l + ' Width: ' + r + ' Top: ' +  t + ' Height: ' + b);
         this.ctx.strokeStyle = '#FFFFFF';
-        this.ctx.lineWidth = 3;
+        this.ctx.lineWidth = ImageComponent.lineWidth;
         this.ctx.strokeRect(l, t, r, b);
 
         const col = this.currentColumn;
@@ -433,7 +478,7 @@ export class ImageComponent implements OnInit, AfterViewInit {
   private getPixelXY(imgData, x, y): any {
     const width = imgData.width;
     const index = y * width + x;
-    console.log(y + ' * ' +  width + ' + ' + x + ' = ' + index);
+    console.log(y + ' * ' + width + ' + ' + x + ' = ' + index);
     console.log('imgData.width: ' + imgData.width + ' index: ' + index);
     return this.getPixel(imgData, index);
   }
@@ -475,7 +520,7 @@ export class ImageComponent implements OnInit, AfterViewInit {
   }
 
   setImgData(): void {
-    this.imgData = this.imgCtx.getImageData(0, 0, 100, 100 );
+    this.imgData = this.imgCtx.getImageData(0, 0, 100, 100);
     // this.imgData = this.imgCtx.getImageData(0, 0, this.width, this.height );
     console.log('imgData.width: ' + this.imgData.width + ' imgData.height: ' + this.imgData.height);
   }
@@ -484,8 +529,7 @@ export class ImageComponent implements OnInit, AfterViewInit {
     if (!this.currentColumn) {
       return this.transparent;
     }
-    const color = this.currentColumn.name === column.name ? this.gold : this.transparent;
-    return color;
+    return this.currentColumn.name === column.name ? this.gold : this.transparent;
   }
 
   testWorker(): void {

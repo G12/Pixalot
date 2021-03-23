@@ -2,7 +2,7 @@ import {Injectable} from '@angular/core';
 import {
   PortalRec, ColumnRecMetaData, RawData
 } from '../project.data';
-import {AngularFirestore, AngularFirestoreDocument} from '@angular/fire/firestore';
+import {AngularFirestore, AngularFirestoreCollection, AngularFirestoreDocument} from '@angular/fire/firestore';
 
 @Injectable({
   providedIn: 'root'
@@ -14,6 +14,8 @@ export class ProjectService {
 
   userBootParamDocRef: AngularFirestoreDocument;
   adminBootParamDocRef: AngularFirestoreDocument;
+  adminListBootDocRef: AngularFirestoreDocument;
+  bootParamsCollection: AngularFirestoreCollection;
   // metaDataDocRef: AngularFirestoreDocument;
 
   constructor(private firestore: AngularFirestore) {
@@ -21,6 +23,8 @@ export class ProjectService {
     // get a reference to the AngularFirestoreDocuments
     this.userBootParamDocRef = this.firestore.collection('fs_boot_params').doc('fs_user');
     this.adminBootParamDocRef = this.firestore.collection('fs_boot_params').doc('fs_admin');
+    this.adminListBootDocRef = this.firestore.collection('fs_boot_params').doc('admin_list');
+    this.bootParamsCollection = this.firestore.collection('fs_boot_params');
     ///////////////////////////   Boot Up  //////////////////////////
 
   }
@@ -46,14 +50,8 @@ export class ProjectService {
     return colRecData;
   }
 
-  // TODO replace
-  // getPortalRecs(path: string): any{
-  //  return this.firestore.collection(path).snapshotChanges();
-  // }
-
   getColumnRecMetaData(projectId: string): AngularFirestoreDocument {
-    const ref: AngularFirestoreDocument = this.firestore.collection(projectId).doc('_metadata');
-    return ref;
+    return this.firestore.collection(projectId).doc('_metadata');
   }
 
   updateRawDataPortalRec(metaData: ColumnRecMetaData): void {

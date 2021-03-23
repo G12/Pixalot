@@ -47,13 +47,6 @@ export interface IngressNameData {
 
 ////////////////////////////  Current ///////////////////////////////////
 // NOTE all fields are optional since firebase returns unknown TODO more research needed here
-export interface BootParam {
-  id?: string;
-  project_id?: string;
-  folder: string;
-  portalCollectionName?: string;
-  admin_list?: string[];
-}
 
 export interface LatLng {
   lat: number;
@@ -104,4 +97,20 @@ export interface LocalData {
   rgba: number[];
   rec: number[];
 }
+
+//////////////////////// User and security Boot Params
+export interface Admin {
+  uid: string;
+  name: string;
+}
+
+export interface AdminList {
+  admins: Admin[];
+}
+
+export interface BootParam {
+  project_id?: string;
+  folder?: string;
+}
+
 

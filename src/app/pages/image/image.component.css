@@ -5,16 +5,25 @@ button{
   display: none;
 }
 .container {
-  position: relative;
   margin: 0;
   padding: 0;
+  position: relative;
 }
 .fs_image_canvas {
   position: relative;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+.canvasAttr {
+  margin: 0;
+  /* border: black solid 2px; */
+  overflow: hidden;
 }
 .overlay_canvas {
   margin: 0;
   padding: 0;
+  overflow: hidden;
   /*position: relative;*/
   position: absolute;
   top: 0;
