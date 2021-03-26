@@ -99,6 +99,10 @@ export interface LocalData {
 }
 
 //////////////////////// User and security Boot Params
+export interface ProjectList {
+  projects: BootParam[];
+}
+
 export interface Admin {
   uid: string;
   name: string;

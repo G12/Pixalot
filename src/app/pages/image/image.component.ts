@@ -1,7 +1,7 @@
 import {AfterViewInit, Component, ElementRef, OnInit, ViewChild} from '@angular/core';
 import {AuthService} from '../../services/auth.service';
 import {ProjectService} from '../../services/project.service';
-import {Admin, AdminList, BootParam, Column, ColumnRecMetaData, LocalData, PortalRec, RawData} from '../../project.data';
+import {Admin, AdminList, BootParam, Column, ColumnRecMetaData, LocalData, PortalRec, ProjectList, RawData} from '../../project.data';
 import {Subscription} from 'rxjs';
 
 @Component({
@@ -29,6 +29,7 @@ export class ImageComponent implements OnInit, AfterViewInit {
   googleUID: string;
   isAdmin = false;
   adminList: AdminList;
+  projectList: ProjectList;
   fsUser: BootParam;
   fsAdmin: BootParam;
 
@@ -51,6 +52,8 @@ export class ImageComponent implements OnInit, AfterViewInit {
   // https://fevgames.net/ifs/ifsathome/2021-02/526512664310392819101497600819769.jpg
   // https://fevgames.net/ifs/ifsathome/2021-03/17631729871888592910113823558419958.jpg
   // url = 'https://fevgames.net/ifs/ifsathome/2021-03/17631729871888592910113823558419958.jpg';
+  // https://fevgames.net/ifs/ifsathome/2021-01/10941061976107631417246021719483.jpg
+  // https://fevgames.net/ifs/ifsathome/2020-12/2053177885416771131201298204919273.jpg
   path = 'https://geopad.ca/fs_pics/';
   thumb: string;
   src: string;
@@ -84,6 +87,7 @@ export class ImageComponent implements OnInit, AfterViewInit {
 
     this.authService.afAuth.currentUser.then(value => {
       this.googleUID = value.uid;
+      this.getAdminAndProjectLists();
     });
 
     if (typeof Worker !== 'undefined') {
@@ -218,6 +222,16 @@ export class ImageComponent implements OnInit, AfterViewInit {
     }
   }
 
+  setUserProject(): void {
+    if (confirm('Set the fs_user data using: ' + this.fsAdmin.folder)) {
+      const bootParams: BootParam = {
+        project_id: this.rawData.id,
+        folder: this.fsAdmin.folder
+      };
+      this.projectService.userBootParamDocRef.set(bootParams);
+    }
+  }
+
   newProject(name: string): void {
     if (this.bootSubscription) {
       this.bootSubscription.unsubscribe();
@@ -228,10 +242,13 @@ export class ImageComponent implements OnInit, AfterViewInit {
     this.columnRecMetaData = this.projectService.setMetaDataDoc(name);
     this.rawData = this.columnRecMetaData.rawData;
     // set the current project id and folder to the admin boot params
-    this.projectService.adminBootParamDocRef.set({
+    const bootParams: BootParam = {
       project_id: this.rawData.id,
       folder: name
-    }).then(value => {
+    };
+    this.projectService.adminBootParamDocRef.set(bootParams).then(value => {
+      this.projectList.projects.push(bootParams);
+      this.projectService.projectListBootDocRef.set(this.projectList);
       // console.log('return: ' + JSON.stringify(value));
     }).catch(reason => {
       // console.log('reason: ' + JSON.stringify(reason));
@@ -245,14 +262,39 @@ export class ImageComponent implements OnInit, AfterViewInit {
     this.projectService.adminListBootDocRef.set(adminList);
   }
 
-  getBootParams(): void {
-    // TODO add UI procedure for assigning admin status this.setAdmin('G12mo', '1KYU0BdE0rXTly5Y5KZslOvxpow2');
+  getAdminAndProjectLists(): void {
     this.projectService.bootParamsCollection.get().subscribe(data => {
       if (!data.empty) {
+        const projLst = data.docs.find(d => d.id === 'project_list');
+        if (projLst) {
+          this.projectList = projLst.data() as ProjectList;
+        } else {
+          this.projectList = {projects: []};
+        }
         const admlst = data.docs.find(d => d.id === 'admin_list');
         if (admlst) {
           this.adminList = admlst.data() as AdminList;
         }
+      }
+    });
+  }
+
+  getBootParams(): void {
+    // TODO add UI procedure for assigning admin status this.setAdmin('G12mo', '1KYU0BdE0rXTly5Y5KZslOvxpow2');
+    this.projectService.bootParamsCollection.get().subscribe(data => {
+      if (!data.empty) {
+        /*
+        const projLst = data.docs.find(d => d.id === 'project_list');
+        if (projLst) {
+          this.projectList = projLst.data() as ProjectList;
+        } else {
+          this.projectList = {projects: []};
+        }
+        const admlst = data.docs.find(d => d.id === 'admin_list');
+        if (admlst) {
+          this.adminList = admlst.data() as AdminList;
+        }
+         */
         const usr = data.docs.find(d => d.id === 'fs_user');
         if (usr) {
           this.fsUser = usr.data() as BootParam;
@@ -401,8 +443,10 @@ export class ImageComponent implements OnInit, AfterViewInit {
       // console.log('bottom: ' + b);
       if (l && r && t && b) {
         // expand frame by 2 pixels
-        l = l - ImageComponent.offset; r = r + ImageComponent.offset;
-        t = t - ImageComponent.offset; b = b + ImageComponent.offset;
+        l = l - ImageComponent.offset;
+        r = r + ImageComponent.offset;
+        t = t - ImageComponent.offset;
+        b = b + ImageComponent.offset;
 
         // console.log('Left: ' + l + ' Width: ' + r + ' Top: ' +  t + ' Height: ' + b);
         this.ctx.strokeStyle = '#FFFFFF';
@@ -519,11 +563,13 @@ export class ImageComponent implements OnInit, AfterViewInit {
     }
   }
 
+  /*
   setImgData(): void {
     this.imgData = this.imgCtx.getImageData(0, 0, 100, 100);
     // this.imgData = this.imgCtx.getImageData(0, 0, this.width, this.height );
     console.log('imgData.width: ' + this.imgData.width + ' imgData.height: ' + this.imgData.height);
   }
+   */
 
   getColColor(column: Column): string {
     if (!this.currentColumn) {
@@ -549,4 +595,5 @@ export class ImageComponent implements OnInit, AfterViewInit {
     }
      */
   }
+
 }

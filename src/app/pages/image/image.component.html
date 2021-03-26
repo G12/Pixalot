@@ -5,7 +5,7 @@
 </div>
 <div>
   <span class="buttonBar">
-    <button (click)="logout()">LogOut</button>
+    <button (click)="logout()" [style.backgroundColor]="'yellow'">LogOut</button>
   </span>
   <span class="buttonBar">
     <button (click)="createNewProject()">Create New Project</button>
@@ -13,13 +13,14 @@
   <span class="buttonBar">
     <button (click)="openCurrenProject()">Open Current Project</button>
   </span>
-  <span class="buttonBar">
-    <button (click)="setImgData()">Set Image Data</button>
+  <span *ngIf="fsAdmin" class="buttonBar">
+    <button (click)="setUserProject()">Set User Project</button>
   </span>
+  <!--
   <span class="buttonBar">
     <button (click)="testWorker()">Test Worker</button>
   </span>
-
+  -->
   <!--  <span class="buttonBar">
     <button (click)="drawCanvas()">Draw Canvas</button>
   </span>-->

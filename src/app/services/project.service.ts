@@ -15,6 +15,7 @@ export class ProjectService {
   userBootParamDocRef: AngularFirestoreDocument;
   adminBootParamDocRef: AngularFirestoreDocument;
   adminListBootDocRef: AngularFirestoreDocument;
+  projectListBootDocRef: AngularFirestoreDocument;
   bootParamsCollection: AngularFirestoreCollection;
   // metaDataDocRef: AngularFirestoreDocument;
 
@@ -24,6 +25,7 @@ export class ProjectService {
     this.userBootParamDocRef = this.firestore.collection('fs_boot_params').doc('fs_user');
     this.adminBootParamDocRef = this.firestore.collection('fs_boot_params').doc('fs_admin');
     this.adminListBootDocRef = this.firestore.collection('fs_boot_params').doc('admin_list');
+    this.projectListBootDocRef = this.firestore.collection('fs_boot_params').doc('project_list');
     this.bootParamsCollection = this.firestore.collection('fs_boot_params');
     ///////////////////////////   Boot Up  //////////////////////////
 
