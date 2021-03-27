@@ -1,29 +1,48 @@
-<div class="infobar">
-  <h1>Output[{{output}}]</h1>
-  <h1 *ngIf="rawData">Project: {{rawData.name}}</h1>
-  <img *ngIf="thumb" class="thumb" [src]="thumb">
-</div>
-<div>
-  <span class="buttonBar">
-    <button (click)="logout()" [style.backgroundColor]="'yellow'">LogOut</button>
-  </span>
-  <span class="buttonBar">
-    <button (click)="createNewProject()">Create New Project</button>
-  </span>
-  <span class="buttonBar">
-    <button (click)="openCurrenProject()">Open Current Project</button>
-  </span>
-  <span *ngIf="fsAdmin" class="buttonBar">
-    <button (click)="setUserProject()">Set User Project</button>
-  </span>
-  <!--
-  <span class="buttonBar">
-    <button (click)="testWorker()">Test Worker</button>
-  </span>
-  -->
-  <!--  <span class="buttonBar">
-    <button (click)="drawCanvas()">Draw Canvas</button>
-  </span>-->
+<div class="topContainer">
+  <div class="topContent" [style.left.px]="pageXOffset">
+    <button (click)="showList = !showList">Show List</button>
+    <ul *ngIf="projectList && showList">
+      <li *ngFor="let project of projectList.projects"
+          (click)="openProject(project)">
+        <span class="proj_item">{{project.folder}}: {{project.project_id}}</span>
+      </li>
+    </ul>
+    <div *ngIf="!showList">
+      <div class="infobar">
+        <h1 *ngIf="rawData">Project: {{rawData.name}}</h1>
+        <img *ngIf="thumb" class="thumb" [src]="thumb">
+      </div>
+      <div>
+      <span class="buttonBar">
+        <button (click)="logout()" [style.backgroundColor]="'yellow'">LogOut</button>
+      </span>
+        <span class="buttonBar">
+          <button (click)="createNewProject()">Create New Project</button>
+      </span>
+        <span class="buttonBar">
+        <button (click)="openCurrenProject()">Open Current Project</button>
+      </span>
+        <span *ngIf="fsAdmin" class="buttonBar">
+      <button (click)="setUserProject()">Set User Project</button>
+      </span>
+        <span *ngIf="isFraming" class="buttonBar">
+        <button (click)="popLastFrame()" [style.backgroundColor]="'red'">Pop Last Frame</button>
+      </span>
+        <span *ngIf="isFraming" class="buttonBar">
+        <button (click)="toggleFreeHand()" [style.backgroundColor]="freeHandColor">FreeHand: {{freeHandState}}</button>
+      </span>
+        <span *ngIf="!noRGBA" class="buttonBar">
+        <button (click)="toggleColumnSet()" [style.backgroundColor]="colSetColor">Column Set: {{colSetState}}</button>
+      </span>
+        <span *ngIf="isFraming" class="buttonBar">
+        <button (click)="moveLeft()" [style.backgroundColor]="'red'"><-Left</button>
+      </span>
+        <span *ngIf="isFraming" class="buttonBar">
+        <button (click)="moveRight()" [style.backgroundColor]="'red'">Right-></button>
+      </span>
+      </div>
+    </div>
+  </div>
 </div>
 <div *ngIf="rawData" class="columnbar" [style.width.px]="width">
   <div class="column" [style.width.px]="column.width"

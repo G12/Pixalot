@@ -1,3 +1,24 @@
+.proj_item {
+  padding: 6px;
+  border: black solid 1px;
+  margin: 2px;
+  cursor: pointer;
+}
+li {
+  padding: 4px;
+}
+.topContainer {
+  position: relative;
+  min-height: 300px;
+}
+.topContent {
+  position: absolute;
+  top: 0;
+  width: 100%;
+}
+.infobar {
+  width:100%;
+}
 button{
   /*all: unset;*/
 }

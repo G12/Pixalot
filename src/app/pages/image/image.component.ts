@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, ElementRef, OnInit, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, HostListener, OnInit, ViewChild} from '@angular/core';
 import {AuthService} from '../../services/auth.service';
 import {ProjectService} from '../../services/project.service';
 import {Admin, AdminList, BootParam, Column, ColumnRecMetaData, LocalData, PortalRec, ProjectList, RawData} from '../../project.data';
@@ -59,18 +59,30 @@ export class ImageComponent implements OnInit, AfterViewInit {
   src: string;
   width: number;
   height: number;
+  pageXOffset = 0;
 
   currentColumn: Column;
   gold = '#ffcc66';
   lightgray = '#cccccc';
   transparent = 'transparent';
 
+  isFreeHand = false;
+  isDrawing = false;
+  startX: number;
+  startY: number;
+  freeHandColor = 'grey';
+  freeHandState = 'OFF';
+
   isFraming = false;
   isColumnSet = false;
+  colSetColor = 'grey';
+  colSetState = 'OFF';
   busy = false;
   brdRGBA: LocalData['rgba']; // = [254, 0, 0, 255];
   noRGBA = true;
   private imgData: ImageData;
+
+  showList = false;
 
   ////////////////////   Web Worker
   private number;
@@ -79,6 +91,14 @@ export class ImageComponent implements OnInit, AfterViewInit {
 
   constructor(public authService: AuthService,
               private projectService: ProjectService) {
+  }
+
+  @HostListener('window:scroll', ['$event'])
+  doSomething(event): void {
+    if (event.isTrusted) {
+      // console.log('window:scroll: ' + JSON.stringify(event));
+      this.pageXOffset = window.pageXOffset;
+    }
   }
 
   ///////////////  initialization helper methods //////////////////////
@@ -152,33 +172,31 @@ export class ImageComponent implements OnInit, AfterViewInit {
           }
         });
       } else if (this.isColumnSet) {
-        if (confirm('Set Next Column for here?')) {
-          this.pickColumnPositions(ev, this.overlayCanvas);
-        }
+        // if (confirm('Set Next Column for here?')) {
+        this.pickColumnPositions(ev, this.overlayCanvas);
+        // }
       } else if (this.isFraming) {
         // Draw the bounding box
         if (!this.busy) {
           this.busy = true;
           // TODO search to see if bounding box exists at this position
           if (this.boxExists(ev, this.overlayCanvas)) {
-            alert('Exists BEEP');
+            alert('Frame Exists BEEP');
             return;
           }
           console.log('overlayCanvas.width: ' + this.overlayCanvas.width +
             ' fsImageCanvas.width: ' + this.fsImageCanvas.width);
-          this.getBoundingBox(ev, this.overlayCanvas);
+          if (this.isFreeHand) {
+            this.busy = false;
+            this.drawFreeHand(ev, this.overlayCanvas);
+          } else {
+            this.getBoundingBox(ev, this.overlayCanvas);
+          }
         } else {
           alert('Sorry Busy Now!');
         }
       } else {
-        if (this.rawData.columns.length === 0) {
-          alert('Start setting column positions');
-          this.isColumnSet = true;
-          return;
-        }
-        if (confirm('Confirm to continue setting columns.')) {
-          this.isColumnSet = true;
-        }
+        alert('No Actions Set!');
       }
     }));
     this.fsImageCanvas = this.fsImageEl.nativeElement;
@@ -204,10 +222,11 @@ export class ImageComponent implements OnInit, AfterViewInit {
     const char = String.fromCharCode(65 + i);
     const width = offset - lastOffset - 2; // minus border width 2
     const col: Column = {name: char, offset, width, portals: []};
+    this.drawColumnSeperator(offset);
     this.rawData.columns.push(col);
     console.log(JSON.stringify(this.rawData));
     this.columnRecMetaData.rawData = this.rawData;
-    this.projectService.updateRawDataPortalRec(this.columnRecMetaData);
+    this.projectService.updateRawData(this.columnRecMetaData);
   }
 
   /////////////////////////// Action Buttons loading data etc.
@@ -279,22 +298,10 @@ export class ImageComponent implements OnInit, AfterViewInit {
     });
   }
 
-  getBootParams(): void {
+  getBootParams(selectedProject: BootParam): void {
     // TODO add UI procedure for assigning admin status this.setAdmin('G12mo', '1KYU0BdE0rXTly5Y5KZslOvxpow2');
     this.projectService.bootParamsCollection.get().subscribe(data => {
       if (!data.empty) {
-        /*
-        const projLst = data.docs.find(d => d.id === 'project_list');
-        if (projLst) {
-          this.projectList = projLst.data() as ProjectList;
-        } else {
-          this.projectList = {projects: []};
-        }
-        const admlst = data.docs.find(d => d.id === 'admin_list');
-        if (admlst) {
-          this.adminList = admlst.data() as AdminList;
-        }
-         */
         const usr = data.docs.find(d => d.id === 'fs_user');
         if (usr) {
           this.fsUser = usr.data() as BootParam;
@@ -306,8 +313,16 @@ export class ImageComponent implements OnInit, AfterViewInit {
         const test = this.adminList.admins.find(a => a.uid === this.googleUID);
         this.isAdmin = !!test;
         if (this.fsAdmin) {
-          const id = this.fsAdmin.project_id;
-          const folder = this.fsAdmin.folder;
+          let id: string;
+          let folder: string;
+          if (selectedProject) {
+            id = selectedProject.project_id;
+            folder = selectedProject.folder;
+          }
+          else {
+            id = this.fsAdmin.project_id;
+            folder = this.fsAdmin.folder;
+          }
           if (confirm('Open for testing Locally')) {
             this.src = 'assets/red.jpg';
           } else {
@@ -322,26 +337,146 @@ export class ImageComponent implements OnInit, AfterViewInit {
   }
 
   openCurrenProject(): void {
-    this.getBootParams();
+    this.getBootParams(null);
+  }
+
+  openProject(project: BootParam): void {
+    if (confirm('Open the ' + project.folder + ' project')) {
+      this.showList = false;
+      this.getBootParams(project);
+    }
   }
 
   selectColumn(column: Column): void {
+    if (this.noRGBA) {
+      alert('Select an RGBA background color first');
+      return;
+    }
     if (this.isFraming) {
       console.log('currentColumn: ', this.currentColumn);
       this.columnRecMetaData.rawData = this.rawData;
-      this.projectService.updateRawDataPortalRec(this.columnRecMetaData);
+      this.projectService.updateRawData(this.columnRecMetaData);
       // Carry on
       this.currentColumn = null;
-      this.isColumnSet = true;
       this.isFraming = false;
     } else {
       this.currentColumn = column;
-      this.isColumnSet = false;
       this.isFraming = true;
     }
   }
 
+  moveLeft(): void {
+    this.currentColumn.offset = this.currentColumn.offset - 1;
+    this.drawColumnSeperator(this.currentColumn.offset);
+    this.columnRecMetaData.rawData = this.rawData;
+    this.projectService.updateRawData(this.columnRecMetaData);
+    this.ctx.clearRect(0, 0, this.width, this.height);
+    this.drawFrames(this.ctx);
+  }
+
+  moveRight(): void {
+    this.currentColumn.offset = this.currentColumn.offset + 1;
+    this.drawColumnSeperator(this.currentColumn.offset);
+    this.columnRecMetaData.rawData = this.rawData;
+    this.projectService.updateRawData(this.columnRecMetaData);
+    this.ctx.clearRect(0, 0, this.width, this.height);
+    this.drawFrames(this.ctx);
+  }
+
+  eraseSeperator(): void {
+    const x = this.currentColumn.offset;
+    alert('Under Construction!');
+  }
+
+  popLastFrame(): void {
+    const p = this.currentColumn.portals.length - 1;
+    if (p < 0) {
+      alert('Cannot remove frame from empty list!');
+      return;
+    }
+    if (confirm('Remove frame: ' + this.currentColumn.portals[p].colName +
+      ':' + this.currentColumn.portals[p].index + ' ?')) {
+      this.currentColumn.portals.pop();
+      this.columnRecMetaData.rawData = this.rawData;
+      this.projectService.updateRawData(this.columnRecMetaData);
+      this.ctx.clearRect(0, 0, this.width, this.height);
+      this.drawFrames(this.ctx);
+    }
+  }
+
+  drawFreeHand(event: MouseEvent, canvas: HTMLCanvasElement): void {
+
+    const xy = this.getXY(event, canvas);
+    const x = xy[0];
+    const y = xy[1];
+
+    // test if in current column
+    if (!(x < this.currentColumn.offset && x > (this.currentColumn.offset - this.currentColumn.width))) {
+      alert('Pick only from column ' + this.currentColumn.name);
+      this.isDrawing = false;
+      return;
+    }
+
+    if (this.isDrawing) {
+      this.isDrawing = false;
+      this.ctx.strokeStyle = '#FFFFFF';
+      this.ctx.lineWidth = 4;
+      // this.ctx.beginPath();
+      const l = this.startX;
+      const t = this.startY;
+      const r = x - this.startX;
+      const b = y - this.startY;
+
+      this.nowDrawFrame(l, r, t, b);
+
+      this.overlayCanvas.style.cursor = 'default';
+      /*
+      this.ctx.strokeRect(l, t, r, b);
+      // this.ctx.strokeRect(this.startX, this.startY, x - this.startX, y - this.startY);
+      // this.ctx.fill();
+      this.overlayCanvas.style.cursor = 'default';
+
+      const col = this.currentColumn;
+      const index = col.portals.length + 1;
+      const portal: PortalRec = {rawDataId: this.rawData.id, index, colName: col.name, l, t, r, b};
+      col.portals.push(portal);
+       */
+
+    } else {
+      this.isDrawing = true;
+      this.startX = x;
+      this.startY = y;
+      this.overlayCanvas.style.cursor = 'crosshair';
+    }
+  }
+
   //////////////////////  Utilities ////////////////////////////
+  toggleFreeHand(): void {
+    this.isFreeHand = !this.isFreeHand;
+    this.freeHandState = this.isFreeHand ? 'ON' : 'OFF';
+    this.freeHandColor = this.isFreeHand ? '#ffcc00' : '#cccccc';
+  }
+
+  toggleColumnSet(): void {
+    this.isColumnSet = !this.isColumnSet;
+    this.colSetState = this.isColumnSet ? 'ON' : 'OFF';
+    this.colSetColor = this.isColumnSet ? '#ffcc00' : '#cccccc';
+  }
+
+  eraseColumnSeperator(x: number): void {
+    // erase original data
+  }
+
+  drawColumnSeperator(x: number): void {
+    // Draw new line
+    this.ctx.strokeStyle = 'rgba(0,0,0,1)';
+    this.ctx.lineWidth = 1;
+    this.ctx.beginPath();
+    this.ctx.moveTo(x, 0);
+    this.ctx.lineTo(x, this.overlayCanvas.height);
+    this.ctx.stroke();
+  }
+
   getColumnRecMetaData(projectId: string): void {
     const sub = this.projectService.getColumnRecMetaData(projectId).get().subscribe(data => {
       if (data.exists) {
@@ -354,6 +489,7 @@ export class ImageComponent implements OnInit, AfterViewInit {
 
   drawFrames(ctx: CanvasRenderingContext2D): void {
     this.rawData.columns.forEach(column => {
+      this.drawColumnSeperator(column.offset);
       column.portals.forEach(prtl => {
         ctx.strokeStyle = '#FFFFFF';
         ctx.lineWidth = ImageComponent.lineWidth;
@@ -394,7 +530,8 @@ export class ImageComponent implements OnInit, AfterViewInit {
     }
     setTimeout(() => {
       let localData: LocalData;
-      const max = 10;
+      let total = 0;
+      const max = 20;
       let exit = max;
       while (exit > 0) {
         // console.log('LEFT exit: ' + exit);
@@ -402,11 +539,12 @@ export class ImageComponent implements OnInit, AfterViewInit {
         if (localData) {
           break;
         }
+        total++;
         exit--;
       }
       // NOTE all l r t b values are adjusted to make bounding box slightly smaller
       const fudge = 2;
-      let l = localData ? (localData.rec[0] + fudge) : null;
+      const l = localData ? (localData.rec[0] + fudge) : null;
       // console.log('left: ' + l);
       exit = max;
       while (exit > 0) {
@@ -415,9 +553,10 @@ export class ImageComponent implements OnInit, AfterViewInit {
         if (localData) {
           break;
         }
+        total++;
         exit--;
       }
-      let r = localData ? (localData.rec[0] - l - fudge) : null;
+      const r = localData ? (localData.rec[0] - l - fudge) : null;
       // console.log('right: ' + r);
       exit = max;
       while (exit > 0) {
@@ -426,9 +565,10 @@ export class ImageComponent implements OnInit, AfterViewInit {
         if (localData) {
           break;
         }
+        total++;
         exit--;
       }
-      let t = localData ? (localData.rec[1] + fudge) : null;
+      const t = localData ? (localData.rec[1] + fudge) : null;
       // console.log('top: ' + t);
       exit = max;
       while (exit > 0) {
@@ -437,11 +577,15 @@ export class ImageComponent implements OnInit, AfterViewInit {
         if (localData) {
           break;
         }
+        total++;
         exit--;
       }
-      let b = localData ? (localData.rec[1] - t - fudge) : null;
+      const b = localData ? (localData.rec[1] - t - fudge) : null;
       // console.log('bottom: ' + b);
       if (l && r && t && b) {
+
+        this.nowDrawFrame(l, r, t, b);
+        /*
         // expand frame by 2 pixels
         l = l - ImageComponent.offset;
         r = r + ImageComponent.offset;
@@ -457,16 +601,34 @@ export class ImageComponent implements OnInit, AfterViewInit {
         const index = col.portals.length + 1;
         const portal: PortalRec = {rawDataId: this.rawData.id, index, colName: col.name, l, t, r, b};
         col.portals.push(portal);
+         */
 
       } else {
         console.log('MISSING coordinate values');
         // TODO why do this
-        alert('Failed to Find!');
+        alert('Failed to Find! ' + total + ' recursions');
       }
       this.busy = false;
     });
   }
 
+  nowDrawFrame(l: number, r: number, t: number, b: number): void {
+    // expand frame by 2 pixels
+    l = l - ImageComponent.offset;
+    r = r + ImageComponent.offset;
+    t = t - ImageComponent.offset;
+    b = b + ImageComponent.offset;
+
+    // console.log('Left: ' + l + ' Width: ' + r + ' Top: ' +  t + ' Height: ' + b);
+    this.ctx.strokeStyle = '#FFFFFF';
+    this.ctx.lineWidth = ImageComponent.lineWidth;
+    this.ctx.strokeRect(l, t, r, b);
+
+    const col = this.currentColumn;
+    const index = col.portals.length + 1;
+    const portal: PortalRec = {rawDataId: this.rawData.id, index, colName: col.name, l, t, r, b};
+    col.portals.push(portal);
+  }
 
   findEdge(imgData, xMouse, yMouse, side): LocalData {
     const rgbData = this.brdRGBA;
