@@ -24,6 +24,7 @@ export class ImageComponent implements OnInit, AfterViewInit {
   portalRecs: PortalRec[];
   columnRecMetaData: ColumnRecMetaData;
   rawData: RawData;
+  imgLoadStatus = 'Constructing App';
 
   //////////////////////////// user info /////////////////////////////
   googleUID: string;
@@ -32,6 +33,7 @@ export class ImageComponent implements OnInit, AfterViewInit {
   projectList: ProjectList;
   fsUser: BootParam;
   fsAdmin: BootParam;
+  currentProject: BootParam;
 
   //////////////////////////// firestore
   bootSubscription: Subscription;
@@ -107,6 +109,7 @@ export class ImageComponent implements OnInit, AfterViewInit {
 
     this.authService.afAuth.currentUser.then(value => {
       this.googleUID = value.uid;
+      this.imgLoadStatus = value.displayName + ' Logged In';
       this.getAdminAndProjectLists();
     });
 
@@ -145,6 +148,7 @@ export class ImageComponent implements OnInit, AfterViewInit {
     this.width = imageEl.naturalWidth;
     this.height = imageEl.naturalHeight;
     this.image = imageEl;
+    this.imgLoadStatus = this.image.src + ' LOADED';
     this.startUp();
   }
 
@@ -241,36 +245,48 @@ export class ImageComponent implements OnInit, AfterViewInit {
     }
   }
 
-  setUserProject(): void {
-    if (confirm('Set the fs_user data using: ' + this.fsAdmin.folder)) {
+  setAdminProject(): void {
+    if (confirm('Set the fs_admin data using: ' + this.currentProject.folder)) {
       const bootParams: BootParam = {
-        project_id: this.rawData.id,
-        folder: this.fsAdmin.folder
+        project_id: this.currentProject.project_id,
+        folder: this.currentProject.folder
+      };
+      this.projectService.adminBootParamDocRef.set(bootParams);
+    }
+  }
+
+  setUserProject(): void {
+    if (confirm('Set the fs_user data using: ' + this.currentProject.folder)) {
+      const bootParams: BootParam = {
+        project_id: this.currentProject.project_id,
+        folder: this.currentProject.folder
       };
       this.projectService.userBootParamDocRef.set(bootParams);
     }
   }
 
   newProject(name: string): void {
-    if (this.bootSubscription) {
-      this.bootSubscription.unsubscribe();
-    }
-    if (this.portalRecsSubscription) {
-      this.portalRecsSubscription.unsubscribe();
-    }
-    this.columnRecMetaData = this.projectService.setMetaDataDoc(name);
-    this.rawData = this.columnRecMetaData.rawData;
-    // set the current project id and folder to the admin boot params
-    const bootParams: BootParam = {
-      project_id: this.rawData.id,
-      folder: name
+    // Create template partially filled
+    const date = new Date().toISOString();
+    const id =  name + ':' + date;
+    const rawData: RawData = {
+      id, name, columns: []
     };
-    this.projectService.adminBootParamDocRef.set(bootParams).then(value => {
-      this.projectList.projects.push(bootParams);
-      this.projectService.projectListBootDocRef.set(this.projectList);
-      // console.log('return: ' + JSON.stringify(value));
-    }).catch(reason => {
-      // console.log('reason: ' + JSON.stringify(reason));
+    const colRecData: ColumnRecMetaData = {
+      rawDataId: rawData.id,
+      id: '_metadata',
+      rawData
+    };
+    // create new ColRec collection and set it's _metadata document
+    this.projectService.getMetadataDoc(id).set(colRecData).then(value => {
+      const bootParam: BootParam = {
+        project_id: rawData.id,
+        folder: name
+      };
+      this.projectList.projects.push(bootParam);
+      this.projectService.projectListBootDocRef.set(this.projectList).then(doc => {
+        this.getBootParams(bootParam);
+      });
     });
   }
 
@@ -284,6 +300,14 @@ export class ImageComponent implements OnInit, AfterViewInit {
   getAdminAndProjectLists(): void {
     this.projectService.bootParamsCollection.get().subscribe(data => {
       if (!data.empty) {
+        const usr = data.docs.find(d => d.id === 'fs_user');
+        if (usr) {
+          this.fsUser = usr.data() as BootParam;
+        }
+        const adm = data.docs.find(d => d.id === 'fs_admin');
+        if (adm) {
+          this.fsAdmin = adm.data() as BootParam;
+        }
         const projLst = data.docs.find(d => d.id === 'project_list');
         if (projLst) {
           this.projectList = projLst.data() as ProjectList;
@@ -294,6 +318,7 @@ export class ImageComponent implements OnInit, AfterViewInit {
         if (admlst) {
           this.adminList = admlst.data() as AdminList;
         }
+        this.imgLoadStatus = 'Start up data loaded';
       }
     });
   }
@@ -302,14 +327,6 @@ export class ImageComponent implements OnInit, AfterViewInit {
     // TODO add UI procedure for assigning admin status this.setAdmin('G12mo', '1KYU0BdE0rXTly5Y5KZslOvxpow2');
     this.projectService.bootParamsCollection.get().subscribe(data => {
       if (!data.empty) {
-        const usr = data.docs.find(d => d.id === 'fs_user');
-        if (usr) {
-          this.fsUser = usr.data() as BootParam;
-        }
-        const adm = data.docs.find(d => d.id === 'fs_admin');
-        if (adm) {
-          this.fsAdmin = adm.data() as BootParam;
-        }
         const test = this.adminList.admins.find(a => a.uid === this.googleUID);
         this.isAdmin = !!test;
         if (this.fsAdmin) {
@@ -318,10 +335,12 @@ export class ImageComponent implements OnInit, AfterViewInit {
           if (selectedProject) {
             id = selectedProject.project_id;
             folder = selectedProject.folder;
+            this.currentProject = selectedProject;
           }
           else {
             id = this.fsAdmin.project_id;
             folder = this.fsAdmin.folder;
+            this.currentProject = this.fsAdmin;
           }
           if (confirm('Open for testing Locally')) {
             this.src = 'assets/red.jpg';

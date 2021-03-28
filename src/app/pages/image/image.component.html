@@ -1,5 +1,12 @@
 <div class="topContainer">
   <div class="topContent" [style.left.px]="pageXOffset">
+    <div class="listAndStatus">
+    <p>Load status: {{imgLoadStatus}}</p>
+    <p *ngIf="currentProject">Current Project:{{currentProject.folder}}: {{currentProject.project_id}}</p>
+    <p *ngIf="fsAdmin">Published - Admin:
+            {{fsAdmin.folder}}: {{fsAdmin.project_id}}<button (click)="openProject(fsAdmin)">Open</button></p>
+    <p *ngIf="fsUser">Published - User:
+            {{fsUser.folder}}: {{fsUser.project_id}}<button (click)="openProject(fsUser)">Open</button></p>
     <button (click)="showList = !showList">Show List</button>
     <ul *ngIf="projectList && showList">
       <li *ngFor="let project of projectList.projects"
@@ -7,7 +14,8 @@
         <span class="proj_item">{{project.folder}}: {{project.project_id}}</span>
       </li>
     </ul>
-    <div *ngIf="!showList">
+    </div>
+    <div class="infoAndButtons" *ngIf="!showList">
       <div class="infobar">
         <h1 *ngIf="rawData">Project: {{rawData.name}}</h1>
         <img *ngIf="thumb" class="thumb" [src]="thumb">
@@ -19,11 +27,14 @@
         <span class="buttonBar">
           <button (click)="createNewProject()">Create New Project</button>
       </span>
-        <span class="buttonBar">
+        <!--<span class="buttonBar">
         <button (click)="openCurrenProject()">Open Current Project</button>
+      </span>-->
+        <span *ngIf="currentProject" class="buttonBar">
+      <button (click)="setUserProject()">Set User Boot</button>
       </span>
-        <span *ngIf="fsAdmin" class="buttonBar">
-      <button (click)="setUserProject()">Set User Project</button>
+        <span *ngIf="currentProject" class="buttonBar">
+      <button (click)="setAdminProject()">Set Admin Boot</button>
       </span>
         <span *ngIf="isFraming" class="buttonBar">
         <button (click)="popLastFrame()" [style.backgroundColor]="'red'">Pop Last Frame</button>

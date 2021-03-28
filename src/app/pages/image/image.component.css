@@ -9,12 +9,18 @@ li {
 }
 .topContainer {
   position: relative;
-  min-height: 300px;
+  min-height: 450px;
 }
 .topContent {
   position: absolute;
   top: 0;
   width: 100%;
+}
+.listAndStatus {
+  min-height: 150px;
+}
+.infoAndButtons {
+  height: 200px;
 }
 .infobar {
   width:100%;

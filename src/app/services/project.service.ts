@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {
-  PortalRec, ColumnRecMetaData, RawData
+  PortalRec, ColumnRecMetaData
 } from '../project.data';
 import {AngularFirestore, AngularFirestoreCollection, AngularFirestoreDocument} from '@angular/fire/firestore';
 
@@ -31,25 +31,8 @@ export class ProjectService {
 
   }
 
-  setMetaDataDoc(name: string): ColumnRecMetaData {
-    // Create template partially filled
-    const date = new Date().toISOString();
-    const id = '_first_sat:' + date;
-    const rawData: RawData = {
-      id, name, columns: []
-    };
-    const colRecData: ColumnRecMetaData = {
-      rawDataId: rawData.id,
-      id: '_metadata',
-      rawData
-    };
-    // create new ColRec collection and set it's _metadata document
-    this.firestore.collection(id).doc('_metadata').set(colRecData).then(value => {
-      console.log('setportal return value: ' + JSON.stringify(value));
-    }).catch(reason => {
-      console.log('setColumnRecData ERROR reason: ' + JSON.stringify(reason));
-    });
-    return colRecData;
+  getMetadataDoc(id: string): AngularFirestoreDocument {
+    return this.firestore.collection(id).doc('_metadata');
   }
 
   getColumnRecMetaData(projectId: string): AngularFirestoreDocument {
