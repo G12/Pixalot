@@ -30,7 +30,12 @@ export class ProjectService {
     ///////////////////////////   Boot Up  //////////////////////////
 
   }
+  ///////////////////////////// initialize _MsgLog /////////////////////////
+  getMsgLogDoc(id: string): AngularFirestoreDocument {
+    return this.firestore.collection(id).doc('_MsgLog');
+  }
 
+  //////////////////////////// initialize _metadata  ////////////////////////
   getMetadataDoc(id: string): AngularFirestoreDocument {
     return this.firestore.collection(id).doc('_metadata');
   }

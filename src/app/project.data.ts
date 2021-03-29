@@ -117,4 +117,8 @@ export interface BootParam {
   folder?: string;
 }
 
-
+export interface MsgDat {
+  msg: string;
+  time: string;
+  prtlId?: string;
+}

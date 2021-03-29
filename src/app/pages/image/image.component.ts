@@ -1,7 +1,18 @@
 import {AfterViewInit, Component, ElementRef, HostListener, OnInit, ViewChild} from '@angular/core';
 import {AuthService} from '../../services/auth.service';
 import {ProjectService} from '../../services/project.service';
-import {Admin, AdminList, BootParam, Column, ColumnRecMetaData, LocalData, PortalRec, ProjectList, RawData} from '../../project.data';
+import {
+  Admin,
+  AdminList,
+  BootParam,
+  Column,
+  ColumnRecMetaData,
+  LocalData,
+  MsgDat,
+  PortalRec,
+  ProjectList,
+  RawData
+} from '../../project.data';
 import {Subscription} from 'rxjs';
 
 @Component({
@@ -278,14 +289,26 @@ export class ImageComponent implements OnInit, AfterViewInit {
       rawData
     };
     // create new ColRec collection and set it's _metadata document
-    this.projectService.getMetadataDoc(id).set(colRecData).then(value => {
+    this.projectService.getMetadataDoc(id).set(colRecData).then(val => {
+      console.log('set _metadata return: ', val);
       const bootParam: BootParam = {
         project_id: rawData.id,
         folder: name
       };
+      const msgDat: MsgDat  = {
+        msg: 'Started Project: ' + name,
+        time: JSON.stringify(new Date())
+      };
+      const messagesDoc = {messages: []};
+      messagesDoc.messages.push(msgDat);
+      this.projectService.getMsgLogDoc(id).set(messagesDoc).then(value => {
+        console.log('set _MsgLog return: ', value);
+      });
       this.projectList.projects.push(bootParam);
       this.projectService.projectListBootDocRef.set(this.projectList).then(doc => {
-        this.getBootParams(bootParam);
+        // this.getBootParams(bootParam);
+        // update the project list
+        alert('Project: ' + name + ' published - list updated');
       });
     });
   }
@@ -295,6 +318,18 @@ export class ImageComponent implements OnInit, AfterViewInit {
     const adminList: AdminList = {admins: []};
     adminList.admins.push(admin);
     this.projectService.adminListBootDocRef.set(adminList);
+  }
+
+  // TODO should not be needed
+  updateProjectList(): void {
+    this.projectService.bootParamsCollection.get().subscribe(data => {
+      const projLst = data.docs.find(d => d.id === 'project_list');
+      if (projLst) {
+        this.projectList = projLst.data() as ProjectList;
+      } else {
+        this.projectList = {projects: []};
+      }
+    });
   }
 
   getAdminAndProjectLists(): void {
