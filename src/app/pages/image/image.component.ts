@@ -62,6 +62,7 @@ export class ImageComponent implements OnInit, AfterViewInit {
   @ViewChild('imageEl') imageEl: ElementRef;
   image: HTMLImageElement;
 
+  // https://fevgames.net/ifs/ifsathome/2021-04/823905612186670122377694437120251.jpg
   // https://fevgames.net/ifs/ifsathome/2021-02/526512664310392819101497600819769.jpg
   // https://fevgames.net/ifs/ifsathome/2021-03/17631729871888592910113823558419958.jpg
   // url = 'https://fevgames.net/ifs/ifsathome/2021-03/17631729871888592910113823558419958.jpg';
@@ -416,6 +417,7 @@ export class ImageComponent implements OnInit, AfterViewInit {
     } else {
       this.currentColumn = column;
       this.isFraming = true;
+      if (this.isColumnSet) { this.toggleColumnSet(); }
     }
   }
 
@@ -437,11 +439,6 @@ export class ImageComponent implements OnInit, AfterViewInit {
     this.drawFrames(this.ctx);
   }
 
-  eraseSeperator(): void {
-    const x = this.currentColumn.offset;
-    alert('Under Construction!');
-  }
-
   popLastFrame(): void {
     const p = this.currentColumn.portals.length - 1;
     if (p < 0) {
@@ -455,6 +452,23 @@ export class ImageComponent implements OnInit, AfterViewInit {
       this.projectService.updateRawData(this.columnRecMetaData);
       this.ctx.clearRect(0, 0, this.width, this.height);
       this.drawFrames(this.ctx);
+    }
+  }
+
+  popLastColumn(): void {
+    let lastColumn: Column = null;
+    const l = this.rawData.columns.length;
+    if ( l > 0) {
+      lastColumn = this.rawData.columns[l - 1];
+    }
+    // const lastColumn = this.rawData.columns[]
+    if (confirm('Remove the last column: ' + lastColumn.name + ' at ' + lastColumn.offset)) {
+      this.rawData.columns.pop();
+      this.columnRecMetaData.rawData = this.rawData;
+      this.projectService.updateRawData(this.columnRecMetaData).then(() => {
+        this.ctx.clearRect(0, 0, this.width, this.height);
+        this.drawFrames(this.ctx);
+      });
     }
   }
 
@@ -484,17 +498,6 @@ export class ImageComponent implements OnInit, AfterViewInit {
       this.nowDrawFrame(l, r, t, b);
 
       this.overlayCanvas.style.cursor = 'default';
-      /*
-      this.ctx.strokeRect(l, t, r, b);
-      // this.ctx.strokeRect(this.startX, this.startY, x - this.startX, y - this.startY);
-      // this.ctx.fill();
-      this.overlayCanvas.style.cursor = 'default';
-
-      const col = this.currentColumn;
-      const index = col.portals.length + 1;
-      const portal: PortalRec = {rawDataId: this.rawData.id, index, colName: col.name, l, t, r, b};
-      col.portals.push(portal);
-       */
 
     } else {
       this.isDrawing = true;
@@ -515,10 +518,6 @@ export class ImageComponent implements OnInit, AfterViewInit {
     this.isColumnSet = !this.isColumnSet;
     this.colSetState = this.isColumnSet ? 'ON' : 'OFF';
     this.colSetColor = this.isColumnSet ? '#ffcc00' : '#cccccc';
-  }
-
-  eraseColumnSeperator(x: number): void {
-    // erase original data
   }
 
   drawColumnSeperator(x: number): void {

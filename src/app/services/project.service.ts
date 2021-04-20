@@ -44,11 +44,9 @@ export class ProjectService {
     return this.firestore.collection(projectId).doc('_metadata');
   }
 
-  updateRawData(metaData: ColumnRecMetaData): void {
-    // delete project.id;
-    this.firestore.doc( metaData.rawDataId + '/_metadata').update(metaData).catch((reason) => {
-      console.log(reason);
-    });
+  updateRawData(metaData: ColumnRecMetaData): Promise<void> {
+    return this.firestore.doc( metaData.rawDataId + '/_metadata').update(metaData);
+    // .catch((reason) => { console.log(reason); });
   }
 
 }
